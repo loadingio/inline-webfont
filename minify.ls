@@ -1,18 +1,16 @@
-require! <[fs fs-extra uglifycss @plotdb/opentype.js ttf2woff2 colors]>
+require! <[fs fs-extra path uglifycss @plotdb/opentype.js ttf2woff2 colors]>
 KB = -> (Math.round(it / 1024) + "KB").padStart(4,' ')
 
 minify = (file) ->
   opentype.load file .then (font) ->
-    list = []
     console.log "Processing #file ...".cyan
     glyphs = []
     for k,g of font.glyphs.glyphs =>
       glyphs.push g
       if !g.name => g.name = ''
-      list ++= ([g.unicode] ++ g.unicodes)
-    list = Array.from(new Set(list))
-      .filter -> (it < 128 and it > 31 ) or it == 0
-    glyphs = glyphs.filter -> (it.unicode > 31 and it.unicode < 128) or it == 0
+    glyphs = glyphs.filter ->
+      if /BenchNine/.exec(file) => return it.unicode > 42 and it.unicode < 58 or it == 0
+      return (it.unicode > 31 and it.unicode < 128) or it == 0
     console.log "  reduce glyphs: #{font.glyphs.length} -> #{glyphs.length}"
 
     size = fs.stat-sync file .size
@@ -28,7 +26,7 @@ minify = (file) ->
       "#{KB (size - datauri.length)} saved (#{Math.round(100 * (size - datauri.length) / size)}%)".yellow
     )
     console.log!
-    [name, weight] = file.replace(/\..*$/, '').split \-
+    [name, weight] = path.basename(file).replace(/\..*$/, '').split \-
     weight = {"Light": 300, "Regular": 400, "Medium": 500, "Bold": 700}[weight]
     css = """
     @font-face {
